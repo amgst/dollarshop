@@ -65,6 +65,6 @@ export const uploadFileToDrive = async (file: File, accessToken: string) => {
   });
 
   // 3. Return the viewable URL
-  // Using the 'uc' (User Content) export link which works well for <img> tags
-  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  // Using lh3.googleusercontent.com which is more reliable for direct embedding than drive.google.com/uc
+  return `https://lh3.googleusercontent.com/d/${fileId}`;
 };
