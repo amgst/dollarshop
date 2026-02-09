@@ -237,6 +237,15 @@ function App() {
     await deleteDoc(doc(db, "products", productId));
   };
 
+  const updateProduct = async (product: Product) => {
+    if (isLocalMode) {
+      setAllProducts(p => p.map(i => i.id === product.id ? product : i));
+      return;
+    }
+    const { id, ...data } = product;
+    await updateDoc(doc(db, "products", id), data);
+  };
+
   const updateStoreConfig = async (newConfig: StoreConfig) => {
     if (isLocalMode) {
       setStoreConfig(newConfig);
@@ -303,12 +312,13 @@ function App() {
         {view === 'admin' ? (
           <AdminPanel 
             products={productsWithCurrentPrice} 
-            config={storeConfig}
-            orders={orders}
+            config={storeConfig} 
+            orders={orders} 
             onAddProduct={addProduct} 
             onDeleteProduct={removeProduct} 
-            onUpdateConfig={updateStoreConfig}
-            onClearOrders={() => {}} 
+            onUpdateProduct={updateProduct}
+            onUpdateConfig={updateStoreConfig} 
+            onClearOrders={() => setOrders([])} 
           />
         ) : (
           <div className="flex flex-col lg:flex-row gap-8">

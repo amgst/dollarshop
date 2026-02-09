@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
+import { getStorage } from "firebase/storage";
 
 /**
  * Firebase Config for DollarDash
@@ -31,3 +32,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const messaging = getMessaging(app);
+export const storage = getStorage(app);
