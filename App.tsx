@@ -10,7 +10,8 @@ import {
   query, 
   orderBy 
 } from "firebase/firestore";
-import { db } from './firebase';
+import { getToken, onMessage } from "firebase/messaging";
+import { db, messaging } from './firebase';
 import { Product, CartItem, Bundle, Category, StoreConfig, Order } from './types';
 import { BUNDLE_DEAL, PRODUCTS as LOCAL_PRODUCTS } from './constants';
 import { Header } from './components/Header';
@@ -55,6 +56,38 @@ function App() {
   });
 
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All' | 'Favorites'>('All');
+
+  // Firebase Messaging Init
+  useEffect(() => {
+    const requestPermission = async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          // TODO: Replace with your VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
+          const token = await getToken(messaging, { 
+            vapidKey: 'BGIQBywiCHAQAR3E5Qgoy2NgF3HsYgqNsHquANEwhMGEoNnVp6pPVyKoAMyywNR9QwzNWnK2gd0MRrQoZ2nZHsw' 
+          });
+          if (token) {
+            console.log('FCM Token:', token);
+            // You would typically send this token to your server to subscribe the user
+          }
+        }
+      } catch (err) {
+        console.log('An error occurred while retrieving token. ', err);
+      }
+    };
+
+    requestPermission();
+
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload);
+      // Customize notification here or show a toast
+      alert(`New Message: ${payload.notification?.title} - ${payload.notification?.body}`);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Firebase Subscriptions with Seamless Local Fallback
   useEffect(() => {
