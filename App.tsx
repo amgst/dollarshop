@@ -9,7 +9,7 @@ import {
   deleteDoc, 
   query, 
   orderBy 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+} from "firebase/firestore";
 import { db } from './firebase';
 import { Product, CartItem, Bundle, Category, StoreConfig, Order } from './types';
 import { BUNDLE_DEAL, PRODUCTS as LOCAL_PRODUCTS } from './constants';
@@ -381,4 +381,83 @@ function App() {
                       <div className="flex-1">
                         <h4 className="font-bold text-sm leading-tight">{item.name}</h4>
                         <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-slate-500">Qty: {item.quantity
+                          <span className="text-xs text-slate-500">Qty: {item.quantity}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="font-bold text-slate-900">Rs. {item.price * item.quantity}</span>
+                         <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                           <button onClick={() => {
+                             const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0, i.quantity - 1) } : i).filter(i => i.quantity > 0);
+                             setCart(newCart);
+                           }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">-</button>
+                           <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                           <button onClick={() => {
+                             const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+                             setCart(newCart);
+                           }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">+</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-6 border-t bg-slate-50">
+                <div className="flex justify-between mb-4 text-lg font-bold">
+                  <span>Total</span>
+                  <span>Rs. {cart.reduce((sum, item) => sum + item.price * item.quantity, 0)}</span>
+                </div>
+                <button 
+                  onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
+                  disabled={cart.length === 0}
+                  className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-lg shadow-slate-200"
+                >
+                  Proceed to Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCheckoutOpen && (
+        <CheckoutModal 
+          onClose={() => setIsCheckoutOpen(false)} 
+          total={cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
+          onSuccess={() => {
+            setCart([]);
+            setIsCheckoutOpen(false);
+          }}
+          onPlaceOrder={async (customerData) => {
+             const orderData: Order = {
+               id: Math.random().toString(36).slice(2),
+               items: cart,
+               total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+               timestamp: Date.now(),
+               customer: customerData
+             };
+             
+             if (!isLocalMode) {
+               try {
+                 await addDoc(collection(db, 'orders'), orderData);
+               } catch (e) {
+                 console.error("Error placing order:", e);
+                 alert("Failed to place order online. Saving locally.");
+                 // Fallback to local
+                 const localOrders = JSON.parse(localStorage.getItem('dollardash-local-orders') || '[]');
+                 localStorage.setItem('dollardash-local-orders', JSON.stringify([...localOrders, orderData]));
+                 setOrders(prev => [orderData, ...prev]);
+               }
+             } else {
+               const localOrders = JSON.parse(localStorage.getItem('dollardash-local-orders') || '[]');
+               localStorage.setItem('dollardash-local-orders', JSON.stringify([...localOrders, orderData]));
+               setOrders(prev => [orderData, ...prev]);
+             }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;
