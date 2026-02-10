@@ -238,11 +238,12 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                   ) : (
                     <label className="block text-center">
                       <span className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-50 transition-colors">
-                        {uploadProgress || 'Upload from Drive'}
+                        {uploadProgress || 'Upload / Capture'}
                       </span>
                       <input 
                         type="file" 
                         accept="image/*"
+                        capture="environment"
                         onChange={handleImageUpload}
                         className="hidden"
                       />
