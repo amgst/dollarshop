@@ -212,7 +212,7 @@ export const Shop: React.FC<ShopProps> = ({
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {filteredProducts.map(product => (
                 <ProductCard
                   key={product.id}
@@ -232,7 +232,7 @@ export const Shop: React.FC<ShopProps> = ({
             </div>
           </div>
 
-          <aside className="w-full lg:w-96 space-y-8 lg:sticky lg:top-24 h-fit">
+          <aside className="w-full lg:w-96 space-y-8 lg:sticky lg:top-24 h-fit hidden lg:block">
             <Bundler 
               bundle={activeBundle} 
               onRemove={removeFromBundle} 
@@ -248,8 +248,49 @@ export const Shop: React.FC<ShopProps> = ({
               bundlePrice={activeBundle.bundlePrice}
             />
           </aside>
+
+          {/* Mobile Bundle/Cart Section - Shows below products on mobile */}
+          <div className="lg:hidden space-y-6 mt-8">
+            <Bundler 
+              bundle={activeBundle} 
+              onRemove={removeFromBundle} 
+              onComplete={completeBundle}
+              onClear={clearBundleItems}
+            />
+             <AIConcierge 
+              availableProducts={productsWithCurrentPrice}
+              onSuggest={(products) => {
+                setActiveBundle(prev => ({ ...prev, items: products.slice(0, activeBundle.maxItems) }));
+              }} 
+              bundleMaxItems={activeBundle.maxItems}
+              bundlePrice={activeBundle.bundlePrice}
+            />
+          </div>
         </div>
       </main>
+
+      {/* Mobile Floating Bundle Bar */}
+      {activeBundle.items.length > 0 && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 animate-slide-up">
+          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bundle Progress</span>
+              <div className="font-black text-lg flex items-baseline gap-1">
+                {activeBundle.items.length} <span className="text-sm font-medium text-slate-400">/ {activeBundle.maxItems} items</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                // Scroll to bundler at bottom
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }}
+              className="bg-emerald-600 px-6 py-2 rounded-xl font-bold hover:bg-emerald-500 transition-colors"
+            >
+              View
+            </button>
+          </div>
+        </div>
+      )}
 
       {isCartOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">

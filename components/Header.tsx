@@ -9,6 +9,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ itemCount, onCartClick, currentView, onViewChange }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-slate-100 z-40 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -23,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({ itemCount, onCartClick, currentV
           </span>
         </div>
 
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 font-semibold text-slate-500">
           <button 
             onClick={() => onViewChange('shop')}
@@ -57,7 +60,53 @@ export const Header: React.FC<HeaderProps> = ({ itemCount, onCartClick, currentV
           
           <button 
             onClick={() => onViewChange(currentView === 'shop' ? 'admin' : 'shop')}
-            className="hidden sm:flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95"
+            className="hidden md:flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-95"
+          >
+            {currentView === 'shop' ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Admin Access
+              </>
+            ) : (
+              'Exit Admin'
+            )}
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-slate-100 shadow-xl p-4 flex flex-col gap-4 animate-fade-in-down">
+          <button 
+            onClick={() => { onViewChange('shop'); setIsMobileMenuOpen(false); }}
+            className={`text-left font-bold p-2 rounded-lg ${currentView === 'shop' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-600'}`}
+          >
+            Shop
+          </button>
+          <button 
+            onClick={() => { onViewChange('admin'); setIsMobileMenuOpen(false); }}
+            className={`text-left font-bold p-2 rounded-lg ${currentView === 'admin' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-600'}`}
+          >
+            Manage Store
+          </button>
+          <div className="h-px bg-slate-100 my-1" />
+           <button 
+            onClick={() => { onViewChange(currentView === 'shop' ? 'admin' : 'shop'); setIsMobileMenuOpen(false); }}
+            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-xl text-sm font-bold justify-center"
           >
             {currentView === 'shop' ? (
               <>
@@ -69,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ itemCount, onCartClick, currentV
             )}
           </button>
         </div>
-      </div>
+      )}
     </header>
   );
 };

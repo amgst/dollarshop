@@ -64,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onClick?.(product)}
       className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group relative cursor-pointer ${isAnimating ? 'animate-flash' : ''}`}
     >
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-36 sm:h-48 overflow-hidden">
         <img 
           src={getImageUrl(product.image)} 
           alt={product.name} 
@@ -108,13 +108,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <h3 className="font-bold text-lg mb-1 truncate">{product.name}</h3>
         <p className="text-slate-500 text-sm mb-4 line-clamp-1">{product.description}</p>
         
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onAdd(product);
             }}
-            className="flex-1 bg-slate-900 text-white py-2 rounded-xl font-semibold hover:bg-slate-800 transition-colors text-sm shadow-sm active:scale-95"
+            className="flex-1 bg-slate-900 text-white py-2 rounded-xl font-semibold hover:bg-slate-800 transition-colors text-xs sm:text-sm shadow-sm active:scale-95"
           >
             Add Single
           </button>
@@ -124,7 +124,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onAddToBundle(product);
             }}
             disabled={bundleFull}
-            className={`px-4 py-2 rounded-xl font-bold transition-all text-sm flex items-center gap-1 ${
+            className={`px-4 py-2 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center justify-center gap-1 ${
               bundleFull 
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 active:scale-95'
