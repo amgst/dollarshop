@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, Category } from '../../types';
 import { uploadFileToDrive } from '../../services/googleDriveService';
+import { analyzeProductImage } from '../../services/geminiService';
 
 interface AdminProductsProps {
   products: Product[];
@@ -34,6 +35,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     image: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
 
   const handleEdit = (product: Product) => {
@@ -63,6 +65,22 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setUploadProgress('Uploading...');
+      
+      // Auto-fill details with AI if it's a new product or fields are empty
+      if (!editingProduct) {
+        setIsAnalyzing(true);
+        analyzeProductImage(file).then(analysis => {
+          if (analysis) {
+            setFormData(prev => ({
+              ...prev,
+              name: analysis.name || prev.name,
+              description: analysis.description || prev.description,
+              category: (CATEGORIES.includes(analysis.category as Category) ? analysis.category as Category : prev.category)
+            }));
+          }
+        }).finally(() => setIsAnalyzing(false));
+      }
+
       try {
         const url = await uploadFileToDrive(file, gDriveToken);
         setFormData(prev => ({ ...prev, image: url }));
@@ -171,6 +189,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Media</label>
               
               <div className="bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 transition-colors relative">
+                {isAnalyzing && (
+                  <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center backdrop-blur-sm rounded-2xl">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                      <p className="text-sm font-bold text-emerald-800 animate-pulse">AI Analyzing...</p>
+                    </div>
+                  </div>
+                )}
                 {formData.image ? (
                   <div className="relative group">
                     <img 
