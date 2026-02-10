@@ -20,6 +20,7 @@ import { Bundler } from './components/Bundler';
 import { AIConcierge } from './components/AIConcierge';
 import { AdminPanel } from './components/AdminPanel';
 import { CheckoutModal } from './components/CheckoutModal';
+import { ProductDetailsModal } from './components/ProductDetailsModal';
 
 const CATEGORIES: Category[] = ['Snacks', 'Stationery', 'Houseware', 'Gadgets', 'Self-Care'];
 
@@ -44,6 +45,9 @@ function App() {
     const saved = localStorage.getItem('dollar-dash-favorites');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   // Calculate dynamic bundle price
   const bundlePrice = Math.floor(storeConfig.itemPrice * storeConfig.bundleItemCount * 0.9);
@@ -375,6 +379,10 @@ function App() {
                     bundleFull={activeBundle.items.length >= activeBundle.maxItems}
                     isFavorite={favorites.includes(product.id)}
                     onToggleFavorite={toggleFavorite}
+                    onClick={(p) => {
+                      setSelectedProduct(p);
+                      setIsProductModalOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -463,42 +471,22 @@ function App() {
         </div>
       )}
 
-      {isCheckoutOpen && (
-        <CheckoutModal 
-          onClose={() => setIsCheckoutOpen(false)} 
-          total={cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
-          onSuccess={() => {
-            setCart([]);
-            setIsCheckoutOpen(false);
-          }}
-          onPlaceOrder={async (customerData) => {
-             const orderData: Order = {
-               id: Math.random().toString(36).slice(2),
-               items: cart,
-               total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
-               timestamp: Date.now(),
-               customer: customerData
-             };
-             
-             if (!isLocalMode) {
-               try {
-                 await addDoc(collection(db, 'orders'), orderData);
-               } catch (e) {
-                 console.error("Error placing order:", e);
-                 alert("Failed to place order online. Saving locally.");
-                 // Fallback to local
-                 const localOrders = JSON.parse(localStorage.getItem('dollardash-local-orders') || '[]');
-                 localStorage.setItem('dollardash-local-orders', JSON.stringify([...localOrders, orderData]));
-                 setOrders(prev => [orderData, ...prev]);
-               }
-             } else {
-               const localOrders = JSON.parse(localStorage.getItem('dollardash-local-orders') || '[]');
-               localStorage.setItem('dollardash-local-orders', JSON.stringify([...localOrders, orderData]));
-               setOrders(prev => [orderData, ...prev]);
-             }
-          }}
-        />
-      )}
+      {/* Modals */}
+      <ProductDetailsModal 
+        product={selectedProduct}
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        onAddToCart={addToCart}
+        onAddToBundle={addToBundle}
+      />
+      
+      <CheckoutModal 
+        isOpen={isCheckoutOpen} 
+        onClose={() => setIsCheckoutOpen(false)}
+        cart={cart}
+        total={cartTotal}
+        onPlaceOrder={placeOrder}
+      />
     </div>
   );
 }

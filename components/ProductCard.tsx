@@ -10,6 +10,7 @@ interface ProductCardProps {
   bundleFull: boolean;
   isFavorite: boolean;
   onToggleFavorite: (productId: string) => void;
+  onClick?: (product: Product) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -19,7 +20,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   isInBundle,
   bundleFull,
   isFavorite,
-  onToggleFavorite
+  onToggleFavorite,
+  onClick
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -30,13 +32,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return () => clearTimeout(timer);
   }, [isFavorite]);
 
+  // Helper to fix broken legacy Drive links on the fly
+  const getImageUrl = (url: string) => {
+    if (url.includes('drive.google.com/uc?export=view&id=')) {
+      const id = url.split('id=')[1];
+      return `https://lh3.googleusercontent.com/d/${id}`;
+    }
+    return url;
+  };
+
   return (
-    <div className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group relative ${isAnimating ? 'animate-flash' : ''}`}>
+    <div 
+      onClick={() => onClick?.(product)}
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 group relative cursor-pointer ${isAnimating ? 'animate-flash' : ''}`}
+    >
       <div className="relative h-48 overflow-hidden">
         <img 
-          src={product.image} 
+          src={getImageUrl(product.image)} 
           alt={product.name} 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          onError={(e) => {
+            // Fallback for failed images
+            e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+          }}
         />
         
         {/* Favorite Button */}
@@ -74,14 +92,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         
         <div className="flex gap-2">
           <button
-            onClick={() => onAdd(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(product);
+            }}
             className="flex-1 bg-slate-900 text-white py-2 rounded-xl font-semibold hover:bg-slate-800 transition-colors text-sm shadow-sm active:scale-95"
           >
             Add Single
           </button>
           <button
             disabled={isInBundle || bundleFull}
-            onClick={() => onAddToBundle(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToBundle(product);
+            }}
             className={`flex-1 py-2 rounded-xl font-semibold transition-all text-sm border-2 active:scale-95 ${
               isInBundle 
                 ? 'bg-green-100 border-green-500 text-green-700 cursor-default'

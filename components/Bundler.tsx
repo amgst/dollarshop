@@ -14,6 +14,15 @@ export const Bundler: React.FC<BundlerProps> = ({ bundle, onRemove, onComplete, 
   const isFull = bundle.items.length === bundle.maxItems;
   const hasItems = bundle.items.length > 0;
 
+  // Helper to fix broken legacy Drive links
+  const getImageUrl = (url: string) => {
+    if (url.includes('drive.google.com/uc?export=view&id=')) {
+      const id = url.split('id=')[1];
+      return `https://lh3.googleusercontent.com/d/${id}`;
+    }
+    return url;
+  };
+
   return (
     <div className="bg-emerald-600 text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-emerald-500/50">
       {/* Background patterns */}
@@ -69,9 +78,12 @@ export const Bundler: React.FC<BundlerProps> = ({ bundle, onRemove, onComplete, 
                 {item ? (
                   <>
                     <img 
-                      src={item.image} 
+                      src={getImageUrl(item.image)} 
                       alt={item.name} 
                       className="w-full h-full object-cover rounded-xl"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/100?text=Error';
+                      }}
                     />
                     <button 
                       onClick={() => onRemove(item.id)}

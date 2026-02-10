@@ -2,13 +2,17 @@
 import React, { useState } from 'react';
 
 interface CheckoutModalProps {
+  isOpen: boolean;
   total: number;
   onClose: () => void;
-  onSuccess: () => void;
+  // removed onSuccess as it is not used in the parent component's new usage or can be inferred
+  cart: any[]; // added cart prop to match App.tsx usage
   onPlaceOrder: (customerData: any) => void;
 }
 
-export const CheckoutModal: React.FC<CheckoutModalProps> = ({ total, onClose, onSuccess, onPlaceOrder }) => {
+export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, total, onClose, onPlaceOrder }) => {
+  if (!isOpen) return null;
+
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,7 +49,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ total, onClose, on
             Your goodies are on their way. Get Rs. {total} ready for Cash on Delivery!
           </p>
           <button
-            onClick={onSuccess}
+            onClick={onClose}
             className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200"
           >
             Back to Shopping
