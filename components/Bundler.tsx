@@ -4,7 +4,7 @@ import { Bundle, Product } from '../types';
 
 interface BundlerProps {
   bundle: Bundle;
-  onRemove: (productId: string) => void;
+  onRemove: (productId: string, index?: number) => void;
   onComplete: () => void;
   onClear: () => void;
 }
@@ -86,7 +86,7 @@ export const Bundler: React.FC<BundlerProps> = ({ bundle, onRemove, onComplete, 
                       }}
                     />
                     <button 
-                      onClick={() => onRemove(item.id)}
+                      onClick={() => onRemove(item.id, i)}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 active:scale-90"
                       title="Remove from bundle"
                     >

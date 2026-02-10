@@ -106,8 +106,26 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
   // Helper to fix broken legacy Drive links
   const getImageUrl = (url: string) => {
+    let id = '';
+    // Handle standard view export format
     if (url.includes('drive.google.com/uc?export=view&id=')) {
-      const id = url.split('id=')[1];
+      id = url.split('id=')[1];
+    } 
+    // Handle file/d/ format
+    else if (url.includes('drive.google.com/file/d/')) {
+      const parts = url.split('/d/');
+      if (parts[1]) {
+        id = parts[1].split('/')[0];
+      }
+    }
+    // Handle open?id= format
+    else if (url.includes('drive.google.com/open?id=')) {
+      id = url.split('id=')[1];
+    }
+
+    if (id) {
+      // Clean ID just in case
+      id = id.split('&')[0].split('?')[0];
       return `https://lh3.googleusercontent.com/d/${id}`;
     }
     return url;
@@ -155,7 +173,15 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
               <div className="bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 transition-colors relative">
                 {formData.image ? (
                   <div className="relative group">
-                    <img src={getImageUrl(formData.image)} className="w-full h-48 object-cover rounded-xl shadow-sm" alt="Preview" />
+                    <img 
+                      src={getImageUrl(formData.image)} 
+                      className="w-full h-48 object-cover rounded-xl shadow-sm" 
+                      alt="Preview" 
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Load+Error';
+                      }}
+                    />
                     <button 
                       type="button"
                       onClick={() => setFormData({ ...formData, image: '' })}
@@ -256,6 +282,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                       src={getImageUrl(product.image)} 
                       className="w-12 h-12 rounded-lg object-cover bg-slate-100" 
                       alt=""
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/100?text=Error';
+                      }}
                     />
                     <span className="font-bold text-slate-700">{product.name}</span>
                   </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export type AdminView = 'products' | 'orders' | 'settings';
 
@@ -13,6 +14,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onViewChange, 
   children 
 }) => {
+  const navigate = useNavigate();
   const menuItems: { id: AdminView; label: string; icon: React.ReactNode }[] = [
     {
       id: 'products',
@@ -60,7 +62,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-4">
+          <button
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Back to Shop
+          </button>
+
           <div className="bg-slate-800 rounded-xl p-4">
             <p className="text-xs font-bold text-slate-400 mb-1">Store Status</p>
             <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 
-interface ProductCardProps {
+export interface ProductCardProps {
   product: Product;
   onAdd: (product: Product) => void;
   onAddToBundle: (product: Product) => void;
@@ -17,10 +17,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product, 
   onAdd, 
   onAddToBundle, 
-  isInBundle,
-  bundleFull,
-  isFavorite,
-  onToggleFavorite,
+  isInBundle, 
+  bundleFull, 
+  isFavorite, 
+  onToggleFavorite, 
   onClick
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -34,8 +34,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   // Helper to fix broken legacy Drive links on the fly
   const getImageUrl = (url: string) => {
+    let id = '';
+    // Handle standard view export format
     if (url.includes('drive.google.com/uc?export=view&id=')) {
-      const id = url.split('id=')[1];
+      id = url.split('id=')[1];
+    } 
+    // Handle file/d/ format
+    else if (url.includes('drive.google.com/file/d/')) {
+      const parts = url.split('/d/');
+      if (parts[1]) {
+        id = parts[1].split('/')[0];
+      }
+    }
+    // Handle open?id= format
+    else if (url.includes('drive.google.com/open?id=')) {
+      id = url.split('id=')[1];
+    }
+
+    if (id) {
+      // Clean ID just in case
+      id = id.split('&')[0].split('?')[0];
       return `https://lh3.googleusercontent.com/d/${id}`;
     }
     return url;
@@ -101,20 +119,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             Add Single
           </button>
           <button
-            disabled={isInBundle || bundleFull}
             onClick={(e) => {
               e.stopPropagation();
               onAddToBundle(product);
             }}
-            className={`flex-1 py-2 rounded-xl font-semibold transition-all text-sm border-2 active:scale-95 ${
-              isInBundle 
-                ? 'bg-green-100 border-green-500 text-green-700 cursor-default'
-                : bundleFull
-                  ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+            disabled={bundleFull}
+            className={`px-4 py-2 rounded-xl font-bold transition-all text-sm flex items-center gap-1 ${
+              bundleFull 
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 active:scale-95'
             }`}
           >
-            {isInBundle ? 'In Bundle' : '+ To Bundle'}
+            {isInBundle ? 'Add Another' : 'Bundle'}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
           </button>
         </div>
       </div>

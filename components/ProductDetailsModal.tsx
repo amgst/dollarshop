@@ -20,8 +20,26 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
 
   // Helper to fix broken legacy Drive links
   const getImageUrl = (url: string) => {
+    let id = '';
+    // Handle standard view export format
     if (url.includes('drive.google.com/uc?export=view&id=')) {
-      const id = url.split('id=')[1];
+      id = url.split('id=')[1];
+    } 
+    // Handle file/d/ format
+    else if (url.includes('drive.google.com/file/d/')) {
+      const parts = url.split('/d/');
+      if (parts[1]) {
+        id = parts[1].split('/')[0];
+      }
+    }
+    // Handle open?id= format
+    else if (url.includes('drive.google.com/open?id=')) {
+      id = url.split('id=')[1];
+    }
+
+    if (id) {
+      // Clean ID just in case
+      id = id.split('&')[0].split('?')[0];
       return `https://lh3.googleusercontent.com/d/${id}`;
     }
     return url;
