@@ -38,6 +38,7 @@ export const Shop: React.FC<ShopProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All' | 'Favorites'>('All');
+  const [isMobileBundlerOpen, setIsMobileBundlerOpen] = useState(false);
 
   // Derived State
   const bundlePrice = Math.floor(storeConfig.itemPrice * storeConfig.bundleItemCount * 0.9);
@@ -150,9 +151,15 @@ export const Shop: React.FC<ShopProps> = ({
       <Header 
         itemCount={cartItemCount} 
         onCartClick={() => setIsCartOpen(true)} 
+        favoritesCount={favorites.length}
+        onFavoritesClick={() => setSelectedCategory('Favorites')}
         currentView="shop"
         onViewChange={(view) => {
-          if (view === 'admin') navigate('/admin');
+          if (view === 'admin') {navigate('/admin');}
+          if (view === 'shop') {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+             navigate('/');
+          }
         }}
       />
 
@@ -168,8 +175,8 @@ export const Shop: React.FC<ShopProps> = ({
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8 mt-16">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
           <div className="flex-1">
             <div className="mb-10 text-center lg:text-left">
               <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight mb-4">
@@ -180,30 +187,23 @@ export const Shop: React.FC<ShopProps> = ({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-8 justify-center lg:justify-start">
+            <div 
+              className="flex overflow-x-auto lg:flex-wrap gap-2 mb-8 pb-4 -mx-2 px-2 lg:mx-0 lg:px-0 lg:pb-0 snap-x [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               <button
                 onClick={() => setSelectedCategory('All')}
-                className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm ${
+                className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${
                   selectedCategory === 'All' ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 All
               </button>
-              <button
-                onClick={() => setSelectedCategory('Favorites')}
-                className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm flex items-center gap-2 ${
-                  selectedCategory === 'Favorites' ? 'bg-red-500 text-white shadow-red-200' : 'bg-white text-slate-600 hover:bg-red-50'
-                }`}
-              >
-                <svg className="w-4 h-4" fill={selectedCategory === 'Favorites' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-                Favorites ({favorites.length})
-              </button>
-              <div className="w-px h-8 bg-slate-200 mx-2 hidden sm:block" />
               {CATEGORIES.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm ${
+                  className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${
                     selectedCategory === cat ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -248,48 +248,76 @@ export const Shop: React.FC<ShopProps> = ({
               bundlePrice={activeBundle.bundlePrice}
             />
           </aside>
-
-          {/* Mobile Bundle/Cart Section - Shows below products on mobile */}
-          <div className="lg:hidden space-y-6 mt-8">
-            <Bundler 
-              bundle={activeBundle} 
-              onRemove={removeFromBundle} 
-              onComplete={completeBundle}
-              onClear={clearBundleItems}
-            />
-             <AIConcierge 
-              availableProducts={productsWithCurrentPrice}
-              onSuggest={(products) => {
-                setActiveBundle(prev => ({ ...prev, items: products.slice(0, activeBundle.maxItems) }));
-              }} 
-              bundleMaxItems={activeBundle.maxItems}
-              bundlePrice={activeBundle.bundlePrice}
-            />
-          </div>
         </div>
       </main>
 
-      {/* Mobile Floating Bundle Bar */}
+      {/* Mobile Floating Bundle Bar (Mini Player Style) */}
       {activeBundle.items.length > 0 && (
-        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-30 animate-slide-up">
-          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800">
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bundle Progress</span>
-              <div className="font-black text-lg flex items-baseline gap-1">
-                {activeBundle.items.length} <span className="text-sm font-medium text-slate-400">/ {activeBundle.maxItems} items</span>
-              </div>
-            </div>
+        <>
+          <div className="lg:hidden fixed bottom-6 left-4 right-4 z-30 animate-slide-up">
             <button 
-              onClick={() => {
-                // Scroll to bundler at bottom
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-              }}
-              className="bg-emerald-600 px-6 py-2 rounded-xl font-bold hover:bg-emerald-500 transition-colors"
+              onClick={() => setIsMobileBundlerOpen(true)}
+              className="w-full bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700/50 group hover:scale-[1.02] transition-all"
             >
-              View
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-emerald-900/50">
+                    {activeBundle.items.length}
+                  </div>
+                  {activeBundle.items.length >= activeBundle.maxItems && (
+                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-slate-900 animate-bounce" />
+                  )}
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Bundle Savings</span>
+                  <div className="font-medium text-slate-300 text-sm">
+                    {activeBundle.items.length >= activeBundle.maxItems ? 'Bundle Complete!' : `${activeBundle.maxItems - activeBundle.items.length} more to save`}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-800 p-2 rounded-xl group-hover:bg-slate-700 transition-colors">
+                <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+              </div>
             </button>
           </div>
-        </div>
+
+          {/* Mobile Bottom Sheet Modal */}
+          {isMobileBundlerOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsMobileBundlerOpen(false)} />
+              <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <h2 className="text-xl font-black text-slate-900">Your Bundle</h2>
+                  <button 
+                    onClick={() => setIsMobileBundlerOpen(false)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <div className="p-6 space-y-8 pb-24">
+                  <Bundler 
+                    bundle={activeBundle} 
+                    onRemove={removeFromBundle} 
+                    onComplete={() => {
+                      completeBundle();
+                      setIsMobileBundlerOpen(false);
+                    }}
+                    onClear={clearBundleItems}
+                  />
+                  <AIConcierge 
+                    availableProducts={productsWithCurrentPrice}
+                    onSuggest={(products) => {
+                      setActiveBundle(prev => ({ ...prev, items: products.slice(0, activeBundle.maxItems) }));
+                    }} 
+                    bundleMaxItems={activeBundle.maxItems}
+                    bundlePrice={activeBundle.bundlePrice}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {isCartOpen && (

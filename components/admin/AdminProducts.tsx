@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../../utils/cropImage';
 import { Product, Category } from '../../types';
 import { uploadFileToDrive } from '../../services/googleDriveService';
 import { analyzeProductImage } from '../../services/geminiService';
@@ -36,7 +38,18 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
+
+  // Crop State
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -64,11 +77,36 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Convert to base64 for cropping
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setCropImage(reader.result as string);
+      });
+      reader.readAsDataURL(file);
+      
+      // Clear input so same file can be selected again
+      e.target.value = '';
+    }
+  };
+
+  const handleCropConfirm = async () => {
+    if (!cropImage || !croppedAreaPixels) return;
+
+    try {
+      const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
+      if (!croppedBlob) throw new Error("Could not crop image");
+
+      // Create a File object from Blob
+      const file = new File([croppedBlob], "product-image.jpg", { type: "image/jpeg" });
+
+      setCropImage(null); // Close cropper
       setUploadProgress('Uploading...');
       
       // Auto-fill details with AI if it's a new product or fields are empty
       if (!editingProduct) {
         setIsAnalyzing(true);
+        setAiError(null);
         analyzeProductImage(file).then(analysis => {
           if (analysis) {
             setFormData(prev => ({
@@ -78,6 +116,9 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
               category: (CATEGORIES.includes(analysis.category as Category) ? analysis.category as Category : prev.category)
             }));
           }
+        }).catch(err => {
+          console.error("AI Error:", err);
+          setAiError(err.message || "AI Analysis failed. Please fill details manually.");
         }).finally(() => setIsAnalyzing(false));
       }
 
@@ -89,7 +130,75 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
         console.error("Upload failed", error);
         setUploadProgress('Failed');
       }
+    } catch (e) {
+      console.error(e);
+      alert("Something went wrong with cropping");
     }
+  };
+
+  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      try {
+        let newProducts: any[] = [];
+
+        if (file.name.endsWith('.json')) {
+          newProducts = JSON.parse(text);
+        } else if (file.name.endsWith('.csv')) {
+          // Simple CSV parser
+          const lines = text.split('\n');
+          const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+          
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const values = lines[i].split(','); // This is basic, doesn't handle commas in quotes
+            const product: any = {};
+            
+            headers.forEach((header, index) => {
+              if (values[index]) {
+                product[header] = values[index].trim();
+              }
+            });
+            
+            if (product.name) newProducts.push(product);
+          }
+        }
+
+        if (newProducts.length === 0) {
+          alert("No valid products found in file");
+          return;
+        }
+
+        let count = 0;
+        for (const p of newProducts) {
+          if (!p.name || !p.image) continue;
+          
+          await onAddProduct({
+            name: p.name,
+            description: p.description || '',
+            category: (CATEGORIES.includes(p.category) ? p.category : 'Snacks') as Category,
+            image: p.image,
+            price: itemPrice
+          });
+          count++;
+        }
+
+        alert(`Successfully imported ${count} products!`);
+        e.target.value = ''; // Reset input
+      } catch (err) {
+        console.error("Import failed", err);
+        alert("Failed to import products. Check file format.");
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,6 +258,53 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     return url;
   };
 
+  if (cropImage) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col animate-fade-in">
+        <div className="flex-1 relative">
+          <Cropper
+            image={cropImage}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            onCropChange={setCrop}
+            onCropComplete={onCropComplete}
+            onZoomChange={setZoom}
+          />
+        </div>
+        <div className="bg-slate-900 p-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-white text-xs font-bold">Zoom</span>
+            <input
+              type="range"
+              value={zoom}
+              min={1}
+              max={3}
+              step={0.1}
+              aria-labelledby="Zoom"
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-24 accent-emerald-500"
+            />
+          </div>
+          <div className="flex gap-3">
+             <button
+              onClick={() => setCropImage(null)}
+              className="text-white text-sm font-bold px-4 py-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCropConfirm}
+              className="bg-emerald-500 text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors"
+            >
+              Confirm Crop
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (view === 'form') {
     return (
       <div className="max-w-3xl mx-auto animate-fade-in">
@@ -186,7 +342,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
             </div>
 
             <div className="space-y-4">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Media</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                Media
+                {aiError && <span className="ml-2 text-red-500 normal-case text-xs font-normal">{aiError}</span>}
+              </label>
               
               <div className="bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 transition-colors relative">
                 {isAnalyzing && (
@@ -223,7 +382,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                   </div>
                 )}
 
-                <div className="mt-4">
+                <div className="mt-4 flex flex-col gap-2">
                   {!gDriveToken ? (
                      <div className="text-center">
                        <p className="text-xs text-red-500 mb-2 font-bold">Drive not connected</p>
@@ -236,19 +395,34 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                        </button>
                      </div>
                   ) : (
-                    <label className="block text-center">
-                      <span className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-50 transition-colors">
-                        {uploadProgress || 'Upload / Capture'}
-                      </span>
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
+                    <div className="flex gap-3 justify-center">
+                      {/* Standard Upload */}
+                      <label className="flex-1 text-center cursor-pointer bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        <span>Upload</span>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* Camera Capture */}
+                      <label className="flex-1 text-center cursor-pointer bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-1.129l.812-1.218a2 2 0 011.664-.87h5.86a2 2 0 011.664.87l.812 1.218A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <span>Camera</span>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   )}
+                  {uploadProgress && <p className="text-center text-xs text-slate-400 font-medium">{uploadProgress}</p>}
                 </div>
               </div>
 
@@ -281,13 +455,25 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-black text-slate-900">Products</h1>
-        <button 
-          onClick={handleAddNew}
-          className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-          Add Product
-        </button>
+        <div className="flex gap-2">
+          <label className="bg-white text-slate-600 border border-slate-200 px-4 py-3 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm cursor-pointer flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+            Bulk Import
+            <input 
+              type="file" 
+              accept=".csv,.json"
+              onChange={handleBulkImport}
+              className="hidden"
+            />
+          </label>
+          <button 
+            onClick={handleAddNew}
+            className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            Add Product
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">

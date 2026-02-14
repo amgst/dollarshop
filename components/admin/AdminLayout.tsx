@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export type AdminView = 'products' | 'orders' | 'settings';
@@ -6,15 +6,24 @@ export type AdminView = 'products' | 'orders' | 'settings';
 interface AdminLayoutProps {
   currentView: AdminView;
   onViewChange: (view: AdminView) => void;
+  onLogout: () => void;
   children: React.ReactNode;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ 
   currentView, 
   onViewChange, 
+  onLogout,
   children 
 }) => {
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleViewChange = (view: AdminView) => {
+    onViewChange(view);
+    setIsMobileMenuOpen(false);
+  };
+
   const menuItems: { id: AdminView; label: string; icon: React.ReactNode }[] = [
     {
       id: 'products',
@@ -34,22 +43,69 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans relative">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-30 shadow-md">
+        <div 
+          className="flex items-center gap-2 font-black text-lg tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate('/')}
+        >
+          <span className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-900">D</span>
+          DollarDash
+        </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-slate-400 hover:text-white transition-colors"
+        >
+          {isMobileMenuOpen ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 sticky top-0 md:h-screen z-20">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-white font-black text-xl tracking-tight">
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0 md:static md:h-screen md:sticky md:top-0
+      `}>
+        <div className="p-6 border-b border-slate-800 hidden md:block">
+          <div 
+            className="flex items-center gap-2 text-white font-black text-xl tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/')}
+          >
             <span className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-900">D</span>
             DollarDash
           </div>
           <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest font-bold">Admin Portal</p>
         </div>
 
+        {/* Mobile Menu Header */}
+        <div className="p-6 border-b border-slate-800 md:hidden flex items-center justify-between">
+          <span className="text-white font-bold text-lg">Menu</span>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="text-slate-500 hover:text-white"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map(item => (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              onClick={() => handleViewChange(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${
                 currentView === item.id 
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
@@ -71,6 +127,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             Back to Shop
           </button>
 
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Logout
+          </button>
+
           <div className="bg-slate-800 rounded-xl p-4">
             <p className="text-xs font-bold text-slate-400 mb-1">Store Status</p>
             <div className="flex items-center gap-2">
@@ -82,7 +146,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+      <main className="flex-1 p-2 md:p-10 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>

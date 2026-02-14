@@ -14,6 +14,7 @@ interface AdminPanelProps {
   onUpdateProduct: (product: Product) => Promise<void>;
   onUpdateConfig: (config: StoreConfig) => Promise<void>;
   onClearOrders: () => void;
+  onLogout: () => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -24,7 +25,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteProduct, 
   onUpdateProduct,
   onUpdateConfig,
-  onClearOrders
+  onClearOrders,
+  onLogout
 }) => {
   const [currentView, setCurrentView] = useState<AdminView>('products');
   const [gDriveToken, setGDriveToken] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }, []);
 
   return (
-    <AdminLayout currentView={currentView} onViewChange={setCurrentView}>
+    <AdminLayout currentView={currentView} onViewChange={setCurrentView} onLogout={onLogout}>
       {currentView === 'products' && (
         <AdminProducts
           products={products}

@@ -24,7 +24,9 @@ function App() {
   const [isLocalMode, setIsLocalMode] = useState(() => {
     return localStorage.getItem('dollardash-mode') === 'local';
   });
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    return localStorage.getItem('dollardash-admin-auth') === 'true';
+  });
   
   // Data States
   const [storeConfig, setStoreConfig] = useState<StoreConfig>({ 
@@ -211,9 +213,16 @@ function App() {
                 onUpdateProduct={updateProduct}
                 onUpdateConfig={updateStoreConfig} 
                 onClearOrders={() => setOrders([])} 
+                onLogout={() => {
+                  localStorage.removeItem('dollardash-admin-auth');
+                  setIsAdminAuthenticated(false);
+                }}
               />
             ) : (
-              <AdminLogin onLogin={() => setIsAdminAuthenticated(true)} />
+              <AdminLogin onLogin={() => {
+                localStorage.setItem('dollardash-admin-auth', 'true');
+                setIsAdminAuthenticated(true);
+              }} />
             )
           } 
         />
