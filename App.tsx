@@ -96,7 +96,7 @@ function App() {
 
     const unsubProducts = onSnapshot(query(collection(db, "products")), (snapshot) => {
       const prods = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-      setAllProducts(prods.length > 0 ? prods : LOCAL_PRODUCTS);
+      setAllProducts(prods);
       setLoading(false);
     }, handleError);
 
@@ -131,11 +131,17 @@ function App() {
   };
 
   const removeProduct = async (productId: string) => {
-    if (isLocalMode) {
-      setAllProducts(p => p.filter(i => i.id !== productId));
-      return;
+    try {
+      if (isLocalMode) {
+        setAllProducts(p => p.filter(i => i.id !== productId));
+        return;
+      }
+      await deleteDoc(doc(db, "products", productId));
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      alert(`Failed to delete product: ${error.message}`);
+      throw error;
     }
-    await deleteDoc(doc(db, "products", productId));
   };
 
   const updateProduct = async (product: Product) => {

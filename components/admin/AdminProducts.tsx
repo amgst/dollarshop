@@ -28,7 +28,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 }) => {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -77,14 +77,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
+
       // Convert to base64 for cropping
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setCropImage(reader.result as string);
       });
       reader.readAsDataURL(file);
-      
+
       // Clear input so same file can be selected again
       e.target.value = '';
     }
@@ -102,7 +102,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
       setCropImage(null); // Close cropper
       setUploadProgress('Uploading...');
-      
+
       // Auto-fill details with AI if it's a new product or fields are empty
       if (!editingProduct) {
         setIsAnalyzing(true);
@@ -155,18 +155,18 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
           // Simple CSV parser
           const lines = text.split('\n');
           const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-          
+
           for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             const values = lines[i].split(','); // This is basic, doesn't handle commas in quotes
             const product: any = {};
-            
+
             headers.forEach((header, index) => {
               if (values[index]) {
                 product[header] = values[index].trim();
               }
             });
-            
+
             if (product.name) newProducts.push(product);
           }
         }
@@ -179,7 +179,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
         let count = 0;
         for (const p of newProducts) {
           if (!p.name || !p.image) continue;
-          
+
           await onAddProduct({
             name: p.name,
             description: p.description || '',
@@ -237,7 +237,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     // Handle standard view export format
     if (url.includes('drive.google.com/uc?export=view&id=')) {
       id = url.split('id=')[1];
-    } 
+    }
     // Handle file/d/ format
     else if (url.includes('drive.google.com/file/d/')) {
       const parts = url.split('/d/');
@@ -287,7 +287,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
             />
           </div>
           <div className="flex gap-3">
-             <button
+            <button
               onClick={() => setCropImage(null)}
               className="text-white text-sm font-bold px-4 py-2 hover:bg-white/10 rounded-lg transition-colors"
             >
@@ -309,7 +309,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     return (
       <div className="max-w-3xl mx-auto animate-fade-in">
         <div className="flex items-center gap-4 mb-8">
-          <button 
+          <button
             onClick={() => setView('list')}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors"
           >
@@ -327,7 +327,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Product Name</label>
                 <input required type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 border-none rounded-xl px-4 py-3" placeholder="e.g. Spicy Chips" />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Category</label>
                 <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })} className="w-full bg-slate-50 border-none rounded-xl px-4 py-3">
@@ -346,7 +346,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                 Media
                 {aiError && <span className="ml-2 text-red-500 normal-case text-xs font-normal">{aiError}</span>}
               </label>
-              
+
               <div className="bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 transition-colors relative">
                 {isAnalyzing && (
                   <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center backdrop-blur-sm rounded-2xl">
@@ -358,16 +358,16 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                 )}
                 {formData.image ? (
                   <div className="relative group">
-                    <img 
-                      src={getImageUrl(formData.image)} 
-                      className="w-full h-48 object-cover rounded-xl shadow-sm" 
-                      alt="Preview" 
+                    <img
+                      src={getImageUrl(formData.image)}
+                      className="w-full h-48 object-cover rounded-xl shadow-sm"
+                      alt="Preview"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Load+Error';
                       }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setFormData({ ...formData, image: '' })}
                       className="absolute top-2 right-2 bg-white/90 p-2 rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
@@ -384,24 +384,24 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
                 <div className="mt-4 flex flex-col gap-2">
                   {!gDriveToken ? (
-                     <div className="text-center">
-                       <p className="text-xs text-red-500 mb-2 font-bold">Drive not connected</p>
-                       <button 
-                         type="button"
-                         onClick={onNavigateToSettings}
-                         className="text-xs bg-slate-900 text-white px-3 py-2 rounded-lg"
-                       >
-                         Go to Settings
-                       </button>
-                     </div>
+                    <div className="text-center">
+                      <p className="text-xs text-red-500 mb-2 font-bold">Drive not connected</p>
+                      <button
+                        type="button"
+                        onClick={onNavigateToSettings}
+                        className="text-xs bg-slate-900 text-white px-3 py-2 rounded-lg"
+                      >
+                        Go to Settings
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex gap-3 justify-center">
                       {/* Standard Upload */}
                       <label className="flex-1 text-center cursor-pointer bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         <span>Upload</span>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
                           className="hidden"
@@ -412,8 +412,8 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                       <label className="flex-1 text-center cursor-pointer bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-1.129l.812-1.218a2 2 0 011.664-.87h5.86a2 2 0 011.664.87l.812 1.218A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         <span>Camera</span>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           accept="image/*"
                           capture="environment"
                           onChange={handleImageUpload}
@@ -431,16 +431,16 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
           </div>
 
           <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setView('list')}
               className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              disabled={isSubmitting} 
+            <button
+              type="submit"
+              disabled={isSubmitting}
               className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-lg shadow-emerald-200"
             >
               {isSubmitting ? 'Saving...' : 'Save Product'}
@@ -459,14 +459,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
           <label className="bg-white text-slate-600 border border-slate-200 px-4 py-3 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm cursor-pointer flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
             Bulk Import
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept=".csv,.json"
               onChange={handleBulkImport}
               className="hidden"
             />
           </label>
-          <button 
+          <button
             onClick={handleAddNew}
             className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-2"
           >
@@ -491,9 +491,9 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
               <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-4">
-                    <img 
-                      src={getImageUrl(product.image)} 
-                      className="w-12 h-12 rounded-lg object-cover bg-slate-100" 
+                    <img
+                      src={getImageUrl(product.image)}
+                      className="w-12 h-12 rounded-lg object-cover bg-slate-100"
                       alt=""
                       referrerPolicy="no-referrer"
                       onError={(e) => {
@@ -516,7 +516,18 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
                     <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
-                    <button onClick={() => onDeleteProduct(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                          try {
+                            await onDeleteProduct(product.id);
+                          } catch (err) {
+                            // Error is handled in App.tsx alert, but we catch it here to prevent unhandled rejection
+                          }
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   </div>
