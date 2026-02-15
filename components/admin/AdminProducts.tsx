@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../../utils/cropImage';
-import { Product, Category } from '../../types';
+import { Product, Category, CategoryConfig } from '../../types';
 import { uploadFileToDrive } from '../../services/googleDriveService';
 import { analyzeProductImage } from '../../services/geminiService';
 
 interface AdminProductsProps {
   products: Product[];
+  categories: CategoryConfig[];
   gDriveToken: string | null;
   itemPrice: number;
   onAddProduct: (product: Omit<Product, 'id'>) => Promise<void>;
@@ -15,10 +16,11 @@ interface AdminProductsProps {
   onNavigateToSettings: () => void;
 }
 
-const CATEGORIES: Category[] = ['Snacks', 'Stationery', 'Houseware', 'Gadgets', 'Self-Care'];
+// Hardcoded categories removed. Now dynamic from props.
 
 export const AdminProducts: React.FC<AdminProductsProps> = ({
   products,
+  categories,
   gDriveToken,
   itemPrice,
   onAddProduct,
@@ -33,7 +35,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: 'Snacks' as Category,
+    category: (categories[0]?.name || '') as Category,
     image: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +66,12 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
   const handleAddNew = () => {
     setEditingProduct(null);
-    setFormData({ name: '', description: '', category: 'Snacks', image: '' });
+    setFormData({
+      name: '',
+      description: '',
+      category: categories[0]?.name || '',
+      image: ''
+    });
     setView('form');
   };
 
@@ -107,13 +114,13 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
       if (!editingProduct) {
         setIsAnalyzing(true);
         setAiError(null);
-        analyzeProductImage(file).then(analysis => {
+        analyzeProductImage(file, categories.map(c => c.name)).then(analysis => {
           if (analysis) {
             setFormData(prev => ({
               ...prev,
               name: analysis.name || prev.name,
               description: analysis.description || prev.description,
-              category: (CATEGORIES.includes(analysis.category as Category) ? analysis.category as Category : prev.category)
+              category: (categories.some(c => c.name === analysis.category) ? analysis.category : prev.category)
             }));
           }
         }).catch(err => {
@@ -183,7 +190,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
           await onAddProduct({
             name: p.name,
             description: p.description || '',
-            category: (CATEGORIES.includes(p.category) ? p.category : 'Snacks') as Category,
+            category: (categories.some(c => c.name === p.category) ? p.category : (categories[0]?.name || 'Uncategorized')),
             image: p.image,
             price: itemPrice
           });
@@ -331,7 +338,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Category</label>
                 <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })} className="w-full bg-slate-50 border-none rounded-xl px-4 py-3">
-                  {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                 </select>
               </div>
 

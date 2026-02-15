@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Product, CartItem, Bundle, Category, StoreConfig } from '../types';
+import { Product, CartItem, Bundle, Category, StoreConfig, CategoryConfig } from '../types';
 import { BUNDLE_DEAL } from '../constants';
 import { Header } from './Header';
 import { ProductCard } from './ProductCard';
@@ -9,22 +9,24 @@ import { AIConcierge } from './AIConcierge';
 import { CheckoutModal } from './CheckoutModal';
 import { ProductDetailsModal } from './ProductDetailsModal';
 
-const CATEGORIES: Category[] = ['Snacks', 'Stationery', 'Houseware', 'Gadgets', 'Self-Care'];
+// Hardcoded categories removed. Now dynamic from props.
 
 interface ShopProps {
   allProducts: Product[];
+  categories: CategoryConfig[];
   storeConfig: StoreConfig;
   isLocalMode: boolean;
   onPlaceOrder: (customerData: any, cart: CartItem[], total: number) => Promise<void>;
   resetMode: () => void;
 }
 
-export const Shop: React.FC<ShopProps> = ({ 
-  allProducts, 
-  storeConfig, 
-  isLocalMode, 
-  onPlaceOrder, 
-  resetMode 
+export const Shop: React.FC<ShopProps> = ({
+  allProducts,
+  categories,
+  storeConfig,
+  isLocalMode,
+  onPlaceOrder,
+  resetMode
 }) => {
   const navigate = useNavigate();
   // Shop State
@@ -42,7 +44,7 @@ export const Shop: React.FC<ShopProps> = ({
 
   // Derived State
   const bundlePrice = Math.floor(storeConfig.itemPrice * storeConfig.bundleItemCount * 0.9);
-  
+
   const [activeBundle, setActiveBundle] = useState<Bundle>({
     ...BUNDLE_DEAL,
     maxItems: storeConfig.bundleItemCount,
@@ -71,14 +73,14 @@ export const Shop: React.FC<ShopProps> = ({
     if (selectedCategory === 'Favorites') {
       return productsWithCurrentPrice.filter(p => favorites.includes(p.id));
     }
-    return selectedCategory === 'All' 
-      ? productsWithCurrentPrice 
+    return selectedCategory === 'All'
+      ? productsWithCurrentPrice
       : productsWithCurrentPrice.filter(p => p.category === selectedCategory);
   }, [selectedCategory, favorites, productsWithCurrentPrice]);
 
   // Handlers
   const toggleFavorite = useCallback((productId: string) => {
-    setFavorites(prev => 
+    setFavorites(prev =>
       prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
     );
   }, []);
@@ -148,17 +150,17 @@ export const Shop: React.FC<ShopProps> = ({
 
   return (
     <div className="min-h-screen pb-20">
-      <Header 
-        itemCount={cartItemCount} 
-        onCartClick={() => setIsCartOpen(true)} 
+      <Header
+        itemCount={cartItemCount}
+        onCartClick={() => setIsCartOpen(true)}
         favoritesCount={favorites.length}
         onFavoritesClick={() => setSelectedCategory('Favorites')}
         currentView="shop"
         onViewChange={(view) => {
-          if (view === 'admin') {navigate('/admin');}
+          if (view === 'admin') { navigate('/admin'); }
           if (view === 'shop') {
-             window.scrollTo({ top: 0, behavior: 'smooth' });
-             navigate('/');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            navigate('/');
           }
         }}
       />
@@ -166,7 +168,7 @@ export const Shop: React.FC<ShopProps> = ({
       {isLocalMode && (
         <div className="bg-amber-100 text-amber-900 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-center sticky top-16 z-30 shadow-sm border-b border-amber-200 flex items-center justify-center gap-4">
           <span>Cloud Offline: Local Persistence Active</span>
-          <button 
+          <button
             onClick={resetMode}
             className="bg-amber-900 text-white px-2 py-0.5 rounded hover:bg-black transition-colors"
           >
@@ -180,34 +182,32 @@ export const Shop: React.FC<ShopProps> = ({
           <div className="flex-1">
             <div className="mb-10 text-center lg:text-left">
               <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight mb-4">
-                Everything <span className="text-emerald-600">Rs. {storeConfig.itemPrice}</span>. 
+                Everything <span className="text-emerald-600">Rs. {storeConfig.itemPrice}</span>.
               </h1>
               <p className="text-slate-500 text-lg max-w-2xl">
                 {isLocalMode ? 'Running in local sandbox mode due to Firebase connection limits.' : 'Premium budget shop synced with the cloud.'} All items exactly Rs. {storeConfig.itemPrice}.
               </p>
             </div>
 
-            <div 
+            <div
               className="flex overflow-x-auto lg:flex-wrap gap-2 mb-8 pb-4 -mx-2 px-2 lg:mx-0 lg:px-0 lg:pb-0 snap-x [&::-webkit-scrollbar]:hidden"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               <button
                 onClick={() => setSelectedCategory('All')}
-                className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${
-                  selectedCategory === 'All' ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
-                }`}
+                className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${selectedCategory === 'All' ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
               >
                 All
               </button>
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${
-                    selectedCategory === cat ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`px-6 py-2 rounded-full font-semibold transition-all shadow-sm whitespace-nowrap snap-start flex-shrink-0 ${selectedCategory === cat.name ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
-                  {cat}
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -233,17 +233,17 @@ export const Shop: React.FC<ShopProps> = ({
           </div>
 
           <aside className="w-full lg:w-96 space-y-8 lg:sticky lg:top-24 h-fit hidden lg:block">
-            <Bundler 
-              bundle={activeBundle} 
-              onRemove={removeFromBundle} 
+            <Bundler
+              bundle={activeBundle}
+              onRemove={removeFromBundle}
               onComplete={completeBundle}
               onClear={clearBundleItems}
             />
-            <AIConcierge 
+            <AIConcierge
               availableProducts={productsWithCurrentPrice}
               onSuggest={(products) => {
                 setActiveBundle(prev => ({ ...prev, items: products.slice(0, activeBundle.maxItems) }));
-              }} 
+              }}
               bundleMaxItems={activeBundle.maxItems}
               bundlePrice={activeBundle.bundlePrice}
             />
@@ -255,7 +255,7 @@ export const Shop: React.FC<ShopProps> = ({
       {activeBundle.items.length > 0 && (
         <>
           <div className="lg:hidden fixed bottom-6 left-4 right-4 z-30 animate-slide-up">
-            <button 
+            <button
               onClick={() => setIsMobileBundlerOpen(true)}
               className="w-full bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700/50 group hover:scale-[1.02] transition-all"
             >
@@ -265,7 +265,7 @@ export const Shop: React.FC<ShopProps> = ({
                     {activeBundle.items.length}
                   </div>
                   {activeBundle.items.length >= activeBundle.maxItems && (
-                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-slate-900 animate-bounce" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-slate-900 animate-bounce" />
                   )}
                 </div>
                 <div className="flex flex-col items-start">
@@ -288,7 +288,7 @@ export const Shop: React.FC<ShopProps> = ({
               <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <h2 className="text-xl font-black text-slate-900">Your Bundle</h2>
-                  <button 
+                  <button
                     onClick={() => setIsMobileBundlerOpen(false)}
                     className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                   >
@@ -296,20 +296,20 @@ export const Shop: React.FC<ShopProps> = ({
                   </button>
                 </div>
                 <div className="p-6 space-y-8 pb-24">
-                  <Bundler 
-                    bundle={activeBundle} 
-                    onRemove={removeFromBundle} 
+                  <Bundler
+                    bundle={activeBundle}
+                    onRemove={removeFromBundle}
                     onComplete={() => {
                       completeBundle();
                       setIsMobileBundlerOpen(false);
                     }}
                     onClear={clearBundleItems}
                   />
-                  <AIConcierge 
+                  <AIConcierge
                     availableProducts={productsWithCurrentPrice}
                     onSuggest={(products) => {
                       setActiveBundle(prev => ({ ...prev, items: products.slice(0, activeBundle.maxItems) }));
-                    }} 
+                    }}
                     bundleMaxItems={activeBundle.maxItems}
                     bundlePrice={activeBundle.bundlePrice}
                   />
@@ -334,7 +334,7 @@ export const Shop: React.FC<ShopProps> = ({
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <svg className="w-20 h-20 mb-4 opacity-10" fill="currentColor" viewBox="0 0 24 24"><path d="M7,18c-1.1,0-1.99,0.9-1.99,2S5.9,22,7,22s2-0.9,2-2S8.1,18,7,18z M17,18c-1.1,0-1.99,0.9-1.99,2s0.89,2,1.99,2s2-0.9,2-2 S18.1,18,17,18z M7.17,14.75l0.03-0.12L8.1,13h7.45c0.75,0,1.41-0.41,1.75-1.03l3.58-6.49c0.37-0.66-0.11-1.48-0.87-1.48H5.21 L4.27,2H1V4h2l3.6,7.59l-1.35,2.44C4.52,15.37,5.48,17,7,17h12v-2H7.17z"/></svg>
+                    <svg className="w-20 h-20 mb-4 opacity-10" fill="currentColor" viewBox="0 0 24 24"><path d="M7,18c-1.1,0-1.99,0.9-1.99,2S5.9,22,7,22s2-0.9,2-2S8.1,18,7,18z M17,18c-1.1,0-1.99,0.9-1.99,2s0.89,2,1.99,2s2-0.9,2-2 S18.1,18,17,18z M7.17,14.75l0.03-0.12L8.1,13h7.45c0.75,0,1.41-0.41,1.75-1.03l3.58-6.49c0.37-0.66-0.11-1.48-0.87-1.48H5.21 L4.27,2H1V4h2l3.6,7.59l-1.35,2.44C4.52,15.37,5.48,17,7,17h12v-2H7.17z" /></svg>
                     <p className="font-bold">Cart is empty</p>
                   </div>
                 ) : (
@@ -349,16 +349,16 @@ export const Shop: React.FC<ShopProps> = ({
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span className="font-bold text-slate-900">Rs. {item.price * item.quantity}</span>
-                         <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
-                           <button onClick={() => {
-                             const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0, i.quantity - 1) } : i).filter(i => i.quantity > 0);
-                             setCart(newCart);
-                           }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">-</button>
-                           <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                           <button onClick={() => {
-                             const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-                             setCart(newCart);
-                           }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">+</button>
+                        <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                          <button onClick={() => {
+                            const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0, i.quantity - 1) } : i).filter(i => i.quantity > 0);
+                            setCart(newCart);
+                          }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">-</button>
+                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                          <button onClick={() => {
+                            const newCart = cart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+                            setCart(newCart);
+                          }} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded shadow-sm">+</button>
                         </div>
                       </div>
                     </div>
@@ -370,7 +370,7 @@ export const Shop: React.FC<ShopProps> = ({
                   <span>Total</span>
                   <span>Rs. {cart.reduce((sum, item) => sum + item.price * item.quantity, 0)}</span>
                 </div>
-                <button 
+                <button
                   onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
                   disabled={cart.length === 0}
                   className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-lg shadow-slate-200"
@@ -384,15 +384,15 @@ export const Shop: React.FC<ShopProps> = ({
       )}
 
       {/* Modals */}
-      <ProductDetailsModal 
+      <ProductDetailsModal
         product={selectedProduct}
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
         onAddToCart={addToCart}
         onAddToBundle={addToBundle}
       />
-      
-      <CheckoutModal 
+
+      <CheckoutModal
         isOpen={isCheckoutOpen}
         total={cartTotal}
         onClose={() => setIsCheckoutOpen(false)}

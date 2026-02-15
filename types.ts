@@ -8,7 +8,13 @@ export interface Product {
   description: string;
 }
 
-export type Category = 'Snacks' | 'Stationery' | 'Houseware' | 'Gadgets' | 'Self-Care';
+export type Category = string;
+
+export interface CategoryConfig {
+  id: string;
+  name: string;
+  count?: number; // Optional count of products
+}
 
 export interface Bundle {
   id: string;

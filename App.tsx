@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { 
-  collection, 
-  onSnapshot, 
-  doc, 
-  setDoc, 
-  addDoc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  addDoc,
+  deleteDoc,
+  query,
   orderBy,
-  updateDoc
+  updateDoc,
+  DocumentSnapshot
 } from "firebase/firestore";
 import { getToken, onMessage } from "firebase/messaging";
 import { db, messaging } from './firebase';
-import { Product, StoreConfig, Order, CartItem } from './types';
+import { Product, StoreConfig, Order, CartItem, CategoryConfig } from './types';
 import { PRODUCTS as LOCAL_PRODUCTS } from './constants';
 import { AdminPanel } from './components/AdminPanel';
 import { Shop } from './components/Shop';
@@ -27,13 +28,14 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     return localStorage.getItem('dollardash-admin-auth') === 'true';
   });
-  
+
   // Data States
-  const [storeConfig, setStoreConfig] = useState<StoreConfig>({ 
-    itemPrice: 100, 
-    bundleItemCount: 6 
+  const [storeConfig, setStoreConfig] = useState<StoreConfig>({
+    itemPrice: 100,
+    bundleItemCount: 6
   });
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<CategoryConfig[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
   // Firebase Messaging Init
@@ -43,8 +45,8 @@ function App() {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
           console.log('Notification permission granted.');
-          const token = await getToken(messaging, { 
-            vapidKey: 'BGIQBywiCHAQAR3E5Qgoy2NgF3HsYgqNsHquANEwhMGEoNnVp6pPVyKoAMyywNR9QwzNWnK2gd0MRrQoZ2nZHsw' 
+          const token = await getToken(messaging, {
+            vapidKey: 'BGIQBywiCHAQAR3E5Qgoy2NgF3HsYgqNsHquANEwhMGEoNnVp6pPVyKoAMyywNR9QwzNWnK2gd0MRrQoZ2nZHsw'
           });
           if (token) {
             console.log('FCM Token:', token);
@@ -71,7 +73,7 @@ function App() {
       const localInventory = JSON.parse(localStorage.getItem('dollardash-local-products') || 'null') || LOCAL_PRODUCTS;
       const localOrders = JSON.parse(localStorage.getItem('dollardash-local-orders') || '[]');
       const localConfig = JSON.parse(localStorage.getItem('dollardash-local-config') || 'null') || { itemPrice: 100, bundleItemCount: 6 };
-      
+
       setAllProducts(localInventory);
       setOrders(localOrders);
       setStoreConfig(localConfig);
@@ -86,11 +88,11 @@ function App() {
       setLoading(false);
     };
 
-    const unsubConfig = onSnapshot(doc(db, "settings", "store"), (doc) => {
-      if (doc.exists()) {
-        setStoreConfig(doc.data() as StoreConfig);
+    const unsubConfig = onSnapshot(doc(db, "settings", "store"), (snapshot: DocumentSnapshot) => {
+      if (snapshot.exists()) {
+        setStoreConfig(snapshot.data() as StoreConfig);
       } else {
-        setDoc(doc.ref, { itemPrice: 100, bundleItemCount: 6 }).catch(handleError);
+        setDoc(snapshot.ref, { itemPrice: 100, bundleItemCount: 6 }).catch(handleError);
       }
     }, handleError);
 
@@ -105,10 +107,23 @@ function App() {
       setOrders(ords);
     }, handleError);
 
+    const unsubCategories = onSnapshot(query(collection(db, "categories")), (snapshot) => {
+      const cats = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as CategoryConfig));
+      if (cats.length === 0) {
+        // Initial setup for categories
+        const defaultCats = ['Snacks', 'Stationery', 'Houseware', 'Gadgets', 'Self-Care'];
+        defaultCats.forEach(cat => {
+          addDoc(collection(db, "categories"), { name: cat });
+        });
+      }
+      setCategories(cats);
+    }, handleError);
+
     return () => {
       unsubConfig();
       unsubProducts();
       unsubOrders();
+      unsubCategories();
     };
   }, [isLocalMode]);
 
@@ -116,6 +131,7 @@ function App() {
   useEffect(() => {
     if (isLocalMode) {
       localStorage.setItem('dollardash-local-products', JSON.stringify(allProducts));
+      localStorage.setItem('dollardash-local-categories', JSON.stringify(categories));
       localStorage.setItem('dollardash-local-orders', JSON.stringify(orders));
       localStorage.setItem('dollardash-local-config', JSON.stringify(storeConfig));
     }
@@ -142,6 +158,23 @@ function App() {
       alert(`Failed to delete product: ${error.message}`);
       throw error;
     }
+  };
+
+  const addCategory = async (name: string) => {
+    if (isLocalMode) {
+      const newC = { id: Date.now().toString(), name } as CategoryConfig;
+      setCategories(c => [...c, newC]);
+      return;
+    }
+    await addDoc(collection(db, "categories"), { name });
+  };
+
+  const removeCategory = async (id: string) => {
+    if (isLocalMode) {
+      setCategories(c => c.filter(i => i.id !== id));
+      return;
+    }
+    await deleteDoc(doc(db, "categories", id));
   };
 
   const updateProduct = async (product: Product) => {
@@ -194,31 +227,35 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            <Shop 
-              allProducts={allProducts} 
-              storeConfig={storeConfig} 
-              isLocalMode={isLocalMode} 
-              onPlaceOrder={placeOrder} 
-              resetMode={resetMode} 
+            <Shop
+              allProducts={allProducts}
+              categories={categories}
+              storeConfig={storeConfig}
+              isLocalMode={isLocalMode}
+              onPlaceOrder={placeOrder}
+              resetMode={resetMode}
             />
-          } 
+          }
         />
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin"
           element={
             isAdminAuthenticated ? (
-              <AdminPanel 
-                products={allProducts} 
-                config={storeConfig} 
-                orders={orders} 
-                onAddProduct={addProduct} 
-                onDeleteProduct={removeProduct} 
+              <AdminPanel
+                products={allProducts}
+                categories={categories}
+                config={storeConfig}
+                orders={orders}
+                onAddProduct={addProduct}
+                onDeleteProduct={removeProduct}
                 onUpdateProduct={updateProduct}
-                onUpdateConfig={updateStoreConfig} 
-                onClearOrders={() => setOrders([])} 
+                onAddCategory={addCategory}
+                onDeleteCategory={removeCategory}
+                onUpdateConfig={updateStoreConfig}
+                onClearOrders={() => setOrders([])}
                 onLogout={() => {
                   localStorage.removeItem('dollardash-admin-auth');
                   setIsAdminAuthenticated(false);
@@ -230,7 +267,7 @@ function App() {
                 setIsAdminAuthenticated(true);
               }} />
             )
-          } 
+          }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

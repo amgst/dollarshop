@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export type AdminView = 'products' | 'orders' | 'settings';
+export type AdminView = 'products' | 'categories' | 'orders' | 'settings';
 
 interface AdminLayoutProps {
   currentView: AdminView;
@@ -10,11 +10,11 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ 
-  currentView, 
-  onViewChange, 
+export const AdminLayout: React.FC<AdminLayoutProps> = ({
+  currentView,
+  onViewChange,
   onLogout,
-  children 
+  children
 }) => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -29,6 +29,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       id: 'products',
       label: 'Products',
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+    },
+    {
+      id: 'categories',
+      label: 'Categories',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
     },
     {
       id: 'orders',
@@ -46,14 +51,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans relative">
       {/* Mobile Header */}
       <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-30 shadow-md">
-        <div 
+        <div
           className="flex items-center gap-2 font-black text-lg tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => navigate('/')}
         >
           <span className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-slate-900">D</span>
           DollarDash
         </div>
-        <button 
+        <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 text-slate-400 hover:text-white transition-colors"
         >
@@ -67,7 +72,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -80,7 +85,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         md:translate-x-0 md:static md:h-screen md:sticky md:top-0
       `}>
         <div className="p-6 border-b border-slate-800 hidden md:block">
-          <div 
+          <div
             className="flex items-center gap-2 text-white font-black text-xl tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
@@ -93,7 +98,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         {/* Mobile Menu Header */}
         <div className="p-6 border-b border-slate-800 md:hidden flex items-center justify-between">
           <span className="text-white font-bold text-lg">Menu</span>
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="text-slate-500 hover:text-white"
           >
@@ -106,11 +111,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <button
               key={item.id}
               onClick={() => handleViewChange(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${
-                currentView === item.id 
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${currentView === item.id
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
                   : 'hover:bg-slate-800 hover:text-white'
-              }`}
+                }`}
             >
               {item.icon}
               {item.label}

@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
-import { Product, StoreConfig, Order } from '../types';
+import { Product, StoreConfig, Order, CategoryConfig } from '../types';
 import { AdminLayout, AdminView } from './admin/AdminLayout';
 import { AdminProducts } from './admin/AdminProducts';
+import { AdminCategories } from './admin/AdminCategories';
 import { AdminOrders } from './admin/AdminOrders';
 import { AdminSettings } from './admin/AdminSettings';
 
 interface AdminPanelProps {
   products: Product[];
+  categories: CategoryConfig[];
   config: StoreConfig;
   orders: Order[];
   onAddProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   onDeleteProduct: (id: string) => Promise<void>;
   onUpdateProduct: (product: Product) => Promise<void>;
+  onAddCategory: (name: string) => Promise<void>;
+  onDeleteCategory: (id: string) => Promise<void>;
   onUpdateConfig: (config: StoreConfig) => Promise<void>;
   onClearOrders: () => void;
   onLogout: () => void;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ 
-  products, 
-  config, 
+export const AdminPanel: React.FC<AdminPanelProps> = ({
+  products,
+  categories,
+  config,
   orders,
-  onAddProduct, 
-  onDeleteProduct, 
+  onAddProduct,
+  onDeleteProduct,
   onUpdateProduct,
+  onAddCategory,
+  onDeleteCategory,
   onUpdateConfig,
   onClearOrders,
   onLogout
@@ -53,12 +60,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {currentView === 'products' && (
         <AdminProducts
           products={products}
+          categories={categories}
           gDriveToken={gDriveToken}
           itemPrice={config.itemPrice}
           onAddProduct={onAddProduct}
           onUpdateProduct={onUpdateProduct}
           onDeleteProduct={onDeleteProduct}
           onNavigateToSettings={() => setCurrentView('settings')}
+        />
+      )}
+
+      {currentView === 'categories' && (
+        <AdminCategories
+          categories={categories}
+          onAddCategory={onAddCategory}
+          onDeleteCategory={onDeleteCategory}
         />
       )}
 
