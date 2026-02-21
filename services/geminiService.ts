@@ -2,8 +2,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Product } from "../types";
 
+const resolveGeminiApiKey = () => {
+  const apiKey =
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.API_KEY;
+
+  return apiKey || null;
+};
+
 export const getAIBundleSuggestions = async (userIntent: string, products: Product[], maxItems: number, bundlePrice: number) => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY || 'AIzaSyDF7GKF4zfqvxbDBa2dL46ItOFi6-_yTrQ';
+  const apiKey = resolveGeminiApiKey();
+  if (!apiKey) {
+    return null;
+  }
   const ai = new GoogleGenAI({ apiKey });
 
   // Only send minimal data to AI to stay within token limits and improve speed
@@ -41,7 +54,10 @@ export const getAIBundleSuggestions = async (userIntent: string, products: Produ
 };
 
 export const analyzeProductImage = async (file: File, categories: string[] = ['Snacks', 'Stationery', 'Houseware', 'Gadgets', 'Self-Care']): Promise<{ name: string; description: string; category: string } | null> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY || 'AIzaSyDF7GKF4zfqvxbDBa2dL46ItOFi6-_yTrQ';
+  const apiKey = resolveGeminiApiKey();
+  if (!apiKey) {
+    return null;
+  }
   const ai = new GoogleGenAI({ apiKey });
 
   try {

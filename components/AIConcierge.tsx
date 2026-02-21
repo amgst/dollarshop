@@ -19,6 +19,7 @@ export const AIConcierge: React.FC<AIConciergeProps> = ({
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState('');
+  const [disabled, setDisabled] = useState(false);
 
   const handleConsult = async () => {
     if (!input.trim() || availableProducts.length === 0) return;
@@ -27,7 +28,12 @@ export const AIConcierge: React.FC<AIConciergeProps> = ({
     
     try {
       const result = await getAIBundleSuggestions(input, availableProducts, bundleMaxItems, bundlePrice);
-      if (result && result.recommendedIds) {
+      if (!result) {
+        setDisabled(true);
+        setExplanation("AI bundles are currently unavailable, but you can build your own combo.");
+        return;
+      }
+      if (result.recommendedIds) {
         const suggestedProducts = availableProducts.filter(p => result.recommendedIds.includes(p.id));
         onSuggest(suggestedProducts);
         setExplanation(result.explanation);
@@ -70,7 +76,7 @@ export const AIConcierge: React.FC<AIConciergeProps> = ({
           />
           <button
             onClick={handleConsult}
-            disabled={loading || availableProducts.length === 0}
+            disabled={loading || availableProducts.length === 0 || disabled}
             className="bg-white text-indigo-700 font-bold px-4 py-2 rounded-xl hover:bg-indigo-50 transition-all disabled:opacity-50 min-w-[64px] flex items-center justify-center text-sm shadow-lg shadow-indigo-900/20 active:scale-95"
           >
             {loading ? (
