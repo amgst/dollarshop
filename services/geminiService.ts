@@ -112,16 +112,12 @@ export const analyzeProductImage = async (file: File, categories: string[] = ['S
     console.log("Gemini text:", text);
 
     if (!text) {
-      throw new Error("Empty response from AI");
+      return null;
     }
 
     return JSON.parse(text);
   } catch (error: any) {
     console.error("AI Analysis failed detailed:", error);
-    // Rethrow with a user-friendly message
-    if (error.message?.includes('403') || error.message?.includes('API key')) {
-      throw new Error("Invalid or expired API Key. Please check your settings.");
-    }
-    throw error;
+    return null;
   }
 };
