@@ -3,7 +3,6 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from '../../utils/cropImage';
 import { Product, Category, CategoryConfig } from '../../types';
 import { uploadFileToDrive } from '../../services/googleDriveService';
-import { analyzeProductImage } from '../../services/geminiService';
 
 interface AdminProductsProps {
   products: Product[];
@@ -39,8 +38,6 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
     image: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>('');
 
   // Crop State
@@ -109,25 +106,6 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
 
       setCropImage(null); // Close cropper
       setUploadProgress('Uploading...');
-
-      // Auto-fill details with AI if it's a new product or fields are empty
-      if (!editingProduct) {
-        setIsAnalyzing(true);
-        setAiError(null);
-        analyzeProductImage(file, categories.map(c => c.name)).then(analysis => {
-          if (analysis) {
-            setFormData(prev => ({
-              ...prev,
-              name: analysis.name || prev.name,
-              description: analysis.description || prev.description,
-              category: (categories.some(c => c.name === analysis.category) ? analysis.category : prev.category)
-            }));
-          }
-        }).catch(err => {
-          console.error("AI Error:", err);
-          setAiError(err.message || "AI Analysis failed. Please fill details manually.");
-        }).finally(() => setIsAnalyzing(false));
-      }
 
       try {
         const url = await uploadFileToDrive(file, gDriveToken);
@@ -351,18 +329,9 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({
             <div className="space-y-4">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                 Media
-                {aiError && <span className="ml-2 text-red-500 normal-case text-xs font-normal">{aiError}</span>}
               </label>
 
               <div className="bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200 hover:border-emerald-500 transition-colors relative">
-                {isAnalyzing && (
-                  <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center backdrop-blur-sm rounded-2xl">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-                      <p className="text-sm font-bold text-emerald-800 animate-pulse">AI Analyzing...</p>
-                    </div>
-                  </div>
-                )}
                 {formData.image ? (
                   <div className="relative group">
                     <img
